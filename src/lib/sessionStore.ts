@@ -44,12 +44,12 @@ function loadSessions(): void {
     if (fs.existsSync(filePath)) {
       const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
       const now = Date.now();
-      for (const [id, session] of Object.entries(data)) {
-        const s = session as StreamSession;
+      Object.keys(data).forEach((id) => {
+        const s = data[id] as StreamSession;
         if (s.expiresAt > now) {
           sessionCache.set(id, s);
         }
-      }
+      });
     }
   } catch (err) {
     console.warn("[SessionStore] Failed to load sessions from disk:", err);
@@ -61,11 +61,11 @@ function saveSessions(): void {
     const filePath = getStoragePath();
     const data: Record<string, StreamSession> = {};
     const now = Date.now();
-    for (const [id, session] of sessionCache.entries()) {
+    sessionCache.forEach((session, id) => {
       if (session.expiresAt > now) {
         data[id] = session;
       }
-    }
+    });
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
   } catch (err) {
     console.warn("[SessionStore] Failed to save sessions to disk:", err);
@@ -144,14 +144,14 @@ export function getSession(id: string): StreamSession | null {
 
 export function pruneExpiredSessions(): void {
   const now = Date.now();
-  let changed = false;
-  for (const [id, session] of sessionCache.entries()) {
+  const expiredIds: string[] = [];
+  sessionCache.forEach((session, id) => {
     if (session.expiresAt <= now) {
-      sessionCache.delete(id);
-      changed = true;
+      expiredIds.push(id);
     }
-  }
-  if (changed) {
+  });
+  if (expiredIds.length > 0) {
+    expiredIds.forEach((id) => sessionCache.delete(id));
     saveSessions();
   }
 }
