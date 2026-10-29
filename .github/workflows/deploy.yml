@@ -1,0 +1,38 @@
+name: FilmFeed Iframe Stream Web CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          npm ci || npm install
+          pip install --no-cache-dir cryptography pycryptodome requests beautifulsoup4 gdown
+
+      - name: Run Next.js Build Check
+        run: |
+          npm run build
